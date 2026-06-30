@@ -2,6 +2,9 @@
 
 > One config file → typed Soroban verifier + TypeScript client + React hook.
 > No more hand-packing public inputs. No more silent order mismatches.
+>
+> **Verified on Stellar testnet**: proof_of_funds circuit deployed and verified on-chain.
+> See [examples/proof_of_funds/DEPLOYMENT.md](examples/proof_of_funds/DEPLOYMENT.md).
 
 Stellar ZK Kit is a CLI that takes a [Noir](https://noir-lang.org/) circuit and a
 `zkkit.toml` config, cross-checks the circuit's public inputs against the config,
@@ -82,13 +85,14 @@ circuit — before it reaches the chain.
 
 ## Reusable Noir primitives
 
-`lib/` is a Noir library package with three audited primitives you can import
-into any circuit:
+`lib/` is a Noir library package with three primitives you can import
+into any circuit. All 10 `nargo test` tests pass (including negative tests
+with `#[test(should_fail)]`):
 
 ```rust
-use ::stellar_zk_kit_primitives::range;
-use ::stellar_zk_kit_primitives::merkle_membership;
-use ::stellar_zk_kit_primitives::nullifier;
+use dep::stellar_zk_kit_primitives::range;
+use dep::stellar_zk_kit_primitives::merkle_membership;
+use dep::stellar_zk_kit_primitives::nullifier;
 
 // Range check: prove a private value is in [min, max]
 range::assert_range(balance as Field, min, 1_000_000);
@@ -106,20 +110,33 @@ let n = nullifier::compute(secret, context);
 | `merkle_membership` | A private leaf is a member of a tree with public `root` (Poseidon over BN254) |
 | `nullifier` | A deterministic, context-bound commitment for one-time actions |
 
-## Example: proof-of-funds
+## Examples
 
-`examples/proof_of_funds/` is a complete, runnable example: prove you control a
-balance >= a public `min` threshold without revealing the balance.
+### proof-of-funds (verified on testnet)
+
+`examples/proof_of_funds/` — prove you control a balance >= a public `min`
+threshold without revealing the balance. Uses the `range` primitive.
+
+**Status**: Deployed and verified on Stellar testnet.
+- Contract: `CAKL7ZRKWCGYGII4FF4EZND2XHBI6IUOR77W7AGE3VKYXHUJSEPIGQKB`
+- Tx: `3cf8c658129a592813c96616faa59a5f721a10bd01e40794a847ede47b326a6b`
+- See [DEPLOYMENT.md](examples/proof_of_funds/DEPLOYMENT.md)
 
 ```bash
 npx zkkit build --config examples/proof_of_funds/zkkit.toml --no-compile \
   --out examples/proof_of_funds/generated
 ```
 
-This produces:
-- `generated/verifier/src/lib.rs` — `ProofOfFundsVerifier` with `verify(env, proof, min: u64) -> bool`
-- `generated/client/proof_of_funds.ts` — `encodeForSoroban(proof, [min])`
-- `generated/react/useProofOfFundsProof.tsx` — `useProofOfFundsProof(prover)`
+### allowlist (verified on localnet)
+
+`examples/allowlist/` — prove membership in a Poseidon Merkle tree allowlist
+without revealing which member you are. Reuses TWO primitives:
+`merkle_membership` + `nullifier`. This is the privacy + anti-double-spend
+pattern that underpins zkBallot, zkAuction, and zkSybil.
+
+**Status**: Deployed and verified on localnet (unlimited limits).
+- Contract: `CD67KU6JUWSV7HSQCLSNEWN4FSTCQKTQDNLX7GBNY2GW4SXX7M4VS52W`
+- See [DEPLOYMENT.md](examples/allowlist/DEPLOYMENT.md)
 
 ## CLI reference
 
@@ -147,8 +164,10 @@ stellar-zk-kit/
 │   ├── client.ts.hbs   # TypeScript client SDK
 │   └── hook.tsx.hbs    # React proving hook
 ├── lib/src/            # reusable Noir primitives (range / merkle / nullifier)
-├── examples/proof_of_funds/
-└── test/               # 28 vitest tests (config / codegen / abi / build / primitives)
+├── examples/
+│   ├── proof_of_funds/  # demo 1: range check (verified on testnet)
+│   └── allowlist/       # demo 2: merkle + nullifier (verified on localnet)
+└── test/               # 28 vitest tests + 15 nargo tests
 ```
 
 ## Toolchain
@@ -167,6 +186,12 @@ See `plans/00-SETUP.md` for detailed installation instructions.
 ```bash
 npm test        # 28 vitest tests (no toolchain required)
 npm run build   # tsc type-check
+
+# With Noir toolchain installed:
+cd lib && nargo test                    # 10 primitive tests
+cd examples/proof_of_funds && nargo test  # 2 tests
+cd examples/allowlist && nargo test       # 3 tests
+# Total: 15 nargo tests + 28 vitest tests = 43 tests
 ```
 
 ## License
