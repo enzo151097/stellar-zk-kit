@@ -1,0 +1,17 @@
+# Stellar ZK Kit config - allowlist example.
+# Prove membership in a Poseidon Merkle tree allowlist without revealing
+# which address is yours. The nullifier prevents double-use of the same
+# membership proof within a context (e.g. a single claim window).
+#
+# Run:  zkkit build --config examples/allowlist/zkkit.toml
+
+[circuit]
+name = "allowlist"
+backend = "ultrahonk"
+source = "src/main.nr"
+
+[public_inputs]
+# Declared order MUST match the circuit's public parameter order.
+order = ["merkle_root", "nullifier"]
+merkle_root = { type = "field" }
+nullifier = { type = "field" }

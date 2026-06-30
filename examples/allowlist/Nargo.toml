@@ -1,0 +1,8 @@
+[package]
+name = "allowlist"
+type = "bin"
+authors = ["Stellar ZK Kit"]
+
+[dependencies]
+stellar_zk_kit_primitives = { path = "../../lib" }
+poseidon = { git = "https://github.com/noir-lang/poseidon", tag = "v0.1.1" }
