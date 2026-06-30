@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "bin": {
+    "zkkit": "dist/cli.js"
+  },
   "scripts": {
     "test": "vitest run",
     "build": "tsc"
