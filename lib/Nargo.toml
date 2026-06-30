@@ -1,0 +1,6 @@
+[package]
+name = "stellar_zk_kit_primitives"
+type = "lib"
+authors = ["Stellar ZK Kit"]
+
+[dependencies]
