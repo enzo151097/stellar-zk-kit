@@ -31,13 +31,13 @@ fn range_at_bounds_passes() {
     assert_range(100, 0, 100);
 }
 
-#[test]
+#[test(should_fail)]
 fn range_above_fails() {
     // 101 is outside [0,100] -> the assert should fail the proof.
     assert_range(101, 0, 100);
 }
 
-#[test]
+#[test(should_fail)]
 fn range_below_fails() {
     assert_range(5, 10, 100);
 }

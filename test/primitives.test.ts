@@ -36,17 +36,18 @@ describe("Noir primitives library", () => {
 
   test("merkle_membership.nr exposes assert_member with Poseidon + tests", () => {
     const nr = read("lib/src/merkle_membership.nr");
-    expect(nr).toContain("use dep::std::hash::poseidon");
+    expect(nr).toContain("use poseidon::poseidon::bn254::hash_2");
     expect(nr).toContain("pub fn assert_member(");
-    expect(nr).toContain("poseidon::bn254::hash_2");
+    expect(nr).toContain("hash_2([left, right])");
     expect(nr).toContain("#[test]");
     expect(nr).toContain("member_passes_for_known_root");
+    expect(nr).toContain("#[test(should_fail)]");
     expect(nr).toContain("non_member_fails");
   });
 
   test("nullifier.nr exposes compute + assert_nullifier with tests", () => {
     const nr = read("lib/src/nullifier.nr");
-    expect(nr).toContain("use dep::std::hash::poseidon");
+    expect(nr).toContain("use poseidon::poseidon::bn254::hash_2");
     expect(nr).toContain("pub fn compute(secret: Field, context: Field)");
     expect(nr).toContain("pub fn assert_nullifier(");
     expect(nr).toContain("nullifier_is_deterministic");
@@ -74,9 +75,10 @@ describe("proof_of_funds example", () => {
   test("main.nr has matching signature (min: pub u64, balance: u64) and uses range primitive", () => {
     const nr = read(`${ex}/src/main.nr`);
     expect(nr).toContain("fn main(min: pub u64, balance: u64)");
-    expect(nr).toContain("use ::stellar_zk_kit_primitives::range");
+    expect(nr).toContain("use dep::stellar_zk_kit_primitives::range");
     expect(nr).toContain("range::assert_range");
     expect(nr).toContain("#[test]");
+    expect(nr).toContain("#[test(should_fail)]");
   });
 
   test("example builds end-to-end via runBuild (skipCompile, no abi) producing 3 files", () => {

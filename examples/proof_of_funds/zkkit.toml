@@ -1,4 +1,4 @@
-# Stellar ZK Kit config — proof-of-funds example.
+# Stellar ZK Kit config - proof-of-funds example.
 # Prove a private balance is >= a public `min` threshold without revealing
 # the balance. This is the canonical "real-world money movement" ZK use case:
 # a user can prove solvency to a counterparty on Stellar without exposing their

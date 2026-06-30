@@ -3,15 +3,15 @@
 // Proves: "I control a balance >= `min`" without revealing the balance.
 //
 // Public inputs (declared in zkkit.toml, must match this signature's pub order):
-//   min : u64   — the threshold the prover must meet or exceed.
+//   min : u64   - the threshold the prover must meet or exceed.
 //
 // Private inputs:
-//   balance : u64 — the secret amount being proven.
+//   balance : u64 - the secret amount being proven.
 //
 // The `range` primitive is imported from the reusable Stellar ZK Kit library so
 // downstream circuits get the same audited bounds-check logic for free.
 
-use ::stellar_zk_kit_primitives::range;
+use dep::stellar_zk_kit_primitives::range;
 
 fn main(min: pub u64, balance: u64) {
     // The prover must hold at least `min`. We also upper-bound the balance at
@@ -26,7 +26,7 @@ fn proves_funds_above_threshold() {
     main(500, 1000);
 }
 
-#[test]
+#[test(should_fail)]
 fn rejects_funds_below_threshold() {
     // balance = 100 < min = 500 -> the range assert fails.
     main(500, 100);

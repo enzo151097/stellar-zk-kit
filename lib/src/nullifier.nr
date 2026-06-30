@@ -6,10 +6,10 @@
 // are detectable on-chain while individual actions stay anonymous.
 //
 // Usage:
-//   use ::primitives::nullifier;
+//   use ::stellar_zk_kit_primitives::nullifier;
 //   let n = nullifier::compute(secret, context);
 
-use dep::std::hash::poseidon;
+use poseidon::poseidon::bn254::hash_2;
 
 /// Compute a nullifier = Poseidon(secret, context).
 /// `secret` is the prover's private key/identity secret.
@@ -18,7 +18,7 @@ use dep::std::hash::poseidon;
 /// correlation) while remaining stable within one context (enabling double-spend
 /// detection).
 pub fn compute(secret: Field, context: Field) -> Field {
-    poseidon::bn254::hash_2([secret, context])
+    hash_2([secret, context])
 }
 
 /// Assert the prover-derived nullifier matches the public one. This is the form
