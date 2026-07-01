@@ -377,7 +377,7 @@ Stellar ZK Kit extracts reusable integration patterns from the `zkballot` style 
 | Item | Link |
 | --- | --- |
 | Live web demo | https://stellar-zk-kit-demo.vercel.app |
-| Demo video | `demo-video/stellar_zk_kit_demo_final.mp4` |
+| Demo video | https://youtu.be/GhDmxCI3Ca4 |
 | Stellar testnet transaction | https://stellar.expert/explorer/testnet/tx/9acc98a09320f4a8242d50bddae49e7ab79c4d0b67319f3486362eb769a82446 |
 | Example circuit | `examples/proof_of_funds/src/main.nr` |
 | Testnet deployment notes | `examples/proof_of_funds/DEPLOYMENT.md` |
