@@ -4,6 +4,12 @@ generated/
 .review-generated/
 .agent-verify/
 target/
+**/target/
+.local-demo/
+demo-video/
+docs/superpowers/
+AGENT_REPORT.md
+CODEX_REVIEW.md
 .local-demo/web/vite.*.log
 demo-video/*.webm
 demo-video/*.wav
