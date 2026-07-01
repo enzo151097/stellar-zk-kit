@@ -91,10 +91,10 @@ describe("proof_of_funds example", () => {
         outDir: join(tmp, "generated"),
         skipCompile: true,
       });
-      expect(res.wroteFiles).toHaveLength(3);
+      expect(res.wroteFiles.length).toBeGreaterThan(3);
       expect(existsSync(join(tmp, "generated", "verifier", "src", "lib.rs"))).toBe(true);
-      expect(existsSync(join(tmp, "generated", "client", "proof_of_funds.ts"))).toBe(true);
-      expect(existsSync(join(tmp, "generated", "react", "useProofOfFundsProof.tsx"))).toBe(true);
+      expect(existsSync(join(tmp, "generated", "web", "src", "client.ts"))).toBe(true);
+      expect(existsSync(join(tmp, "generated", "web", "src", "useProofOfFundsProof.tsx"))).toBe(true);
       // The generated verifier should reference ProofOfFundsVerifier.
       const rust = readFileSync(join(tmp, "generated", "verifier", "src", "lib.rs"), "utf8");
       expect(rust).toContain("ProofOfFundsVerifier");

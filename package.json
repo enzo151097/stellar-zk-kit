@@ -4,11 +4,12 @@
   "description": "",
   "main": "index.js",
   "bin": {
-    "zkkit": "dist/cli.js"
+    "zkkit": "dist/src/cli.js"
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsc"
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",

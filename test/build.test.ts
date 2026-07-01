@@ -50,15 +50,73 @@ describe("runBuild", () => {
     });
 
     expect(res.crossChecked).toBe(true);
-    expect(res.wroteFiles).toHaveLength(3);
+    expect(res.wroteFiles.length).toBeGreaterThan(3);
     const verifier = join(outDir, "verifier", "src", "lib.rs");
-    const client = join(outDir, "client", "ballot.ts");
-    const hook = join(outDir, "react", "useBallotProof.tsx");
+    const client = join(outDir, "web", "src", "client.ts");
+    const hook = join(outDir, "web", "src", "useBallotProof.tsx");
     expect(existsSync(verifier)).toBe(true);
     expect(existsSync(client)).toBe(true);
     expect(existsSync(hook)).toBe(true);
     expect(readFileSync(verifier, "utf8")).toContain("BallotVerifier");
     expect(readFileSync(hook, "utf8")).toContain("useBallotProof");
+  });
+
+  test("generates the approved evidence dashboard with honest on-chain states", () => {
+    const cfgPath = join(dir, "zkkit.toml");
+    const abiPath = join(dir, "ballot.json");
+    const outDir = join(dir, "generated");
+    writeFileSync(cfgPath, TOML);
+    writeFileSync(abiPath, ABI);
+
+    runBuild({
+      configPath: cfgPath,
+      outDir,
+      skipCompile: true,
+      abiJsonPath: abiPath,
+    });
+
+    const app = readFileSync(join(outDir, "web", "src", "App.tsx"), "utf8");
+    const evidence = readFileSync(join(outDir, "web", "src", "evidence.ts"), "utf8");
+    const styles = readFileSync(join(outDir, "web", "src", "styles.css"), "utf8");
+    const prover = readFileSync(
+      join(outDir, "web", "src", "browserProver.ts"),
+      "utf8"
+    );
+    const dashboardPackage = JSON.parse(
+      readFileSync(join(outDir, "web", "package.json"), "utf8")
+    );
+    const readmeTemplate = readFileSync(
+      join(process.cwd(), "templates", "README.md.hbs"),
+      "utf8"
+    );
+
+    expect(app).toContain("On-chain verification");
+    expect(app).toContain("On-chain evidence unavailable");
+    expect(app).toContain('from "./evidence"');
+    expect(app).toContain("View on Stellar Expert");
+    expect(evidence).toContain("interface OnChainEvidence");
+    expect(evidence).toContain("ON_CHAIN_EVIDENCE: OnChainEvidence | null = null");
+    expect(app).toContain('className="progress-rail"');
+    expect(app).toContain('className="proof-workspace"');
+    expect(app).toContain("Private witness");
+    expect(app).toContain("identity_secret");
+    expect(prover).toContain('from "@noir-lang/noir_js"');
+    expect(prover).toContain('import("@aztec/bb.js")');
+    expect(prover).toContain('import("@noir-lang/noir_js")');
+    expect(prover).toContain("initializeNoirRuntime");
+    expect(prover).toContain("new UltraHonkBackend");
+    expect(prover).toContain("verifyProof(proofData");
+    expect(existsSync(join(outDir, "web", "src", "circuit.json"))).toBe(true);
+    expect(dashboardPackage.dependencies["@noir-lang/noir_js"]).toBe(
+      "1.0.0-beta.9"
+    );
+    expect(dashboardPackage.dependencies["@aztec/bb.js"]).toBe("0.87.0");
+    expect(styles).toContain('"Space Grotesk"');
+    expect(styles).toContain('"JetBrains Mono"');
+    expect(styles).toContain("--forest: #174a36");
+    expect(styles).not.toContain("linear-gradient");
+    expect(readmeTemplate).toContain("Local vs. On-chain Evidence");
+    expect(readmeTemplate).toContain("must not be presented as live");
   });
 
   test("skipCompile + no abi -> crossChecked:false and still writes files", () => {
@@ -69,7 +127,7 @@ describe("runBuild", () => {
     const res = runBuild({ configPath: cfgPath, outDir, skipCompile: true });
 
     expect(res.crossChecked).toBe(false);
-    expect(res.wroteFiles).toHaveLength(3);
+    expect(res.wroteFiles.length).toBeGreaterThan(3);
     expect(existsSync(join(outDir, "verifier", "src", "lib.rs"))).toBe(true);
   });
 

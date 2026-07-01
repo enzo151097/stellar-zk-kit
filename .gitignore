@@ -1,2 +1,11 @@
 node_modules
 dist
+generated/
+.review-generated/
+.agent-verify/
+target/
+.local-demo/web/vite.*.log
+demo-video/*.webm
+demo-video/*.wav
+demo-video/thumb_*.png
+demo-video/raw/

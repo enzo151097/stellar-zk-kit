@@ -1,8 +1,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { parseConfig, type ZkKitConfig } from "./config.js";
-import { genVerifier, genClient, genHook } from "./codegen.js";
-import { extractPublicInputs, crossCheck } from "./abi.js";
+import { genVerifier, genClient, genHook, genTest, genCargo } from "./codegen.js";
+import { extractPrivateInputs, extractPublicInputs, crossCheck } from "./abi.js";
+import type { PublicInput } from "./config.js";
 import {
   compileCircuit,
   writeVerifyingKey,
@@ -31,6 +32,47 @@ function pascalCase(name: string): string {
     .join("");
 }
 
+import { readdirSync, statSync, existsSync } from "node:fs";
+import Handlebars from "handlebars";
+
+function copyDashboardTemplate(
+  cfg: ZkKitConfig,
+  privateInputs: PublicInput[],
+  outDir: string,
+  wroteFiles: string[]
+) {
+  let templatesDir = join(dirname(new URL(import.meta.url).pathname), "..", "templates", "dashboard");
+  let safeTemplatesDir = templatesDir.replace(/^\\([A-Z]:\\)/, '$1');
+  if (!existsSync(safeTemplatesDir)) {
+    templatesDir = join(dirname(new URL(import.meta.url).pathname), "..", "..", "templates", "dashboard");
+    safeTemplatesDir = templatesDir.replace(/^\\([A-Z]:\\)/, '$1');
+  }
+  const webDir = join(outDir, "web");
+  
+  function copyRecursive(src: string, dest: string) {
+    if (!statSync(src).isDirectory()) {
+      let content = readFileSync(src, "utf8");
+      let outPath = dest;
+      if (src.endsWith(".hbs")) {
+        content = Handlebars.compile(content)({ ...cfg, privateInputs });
+        outPath = dest.slice(0, -4);
+      }
+      wroteFiles.push(writeFile(outPath, content));
+      return;
+    }
+    mkdirSync(dest, { recursive: true });
+    for (const file of readdirSync(src)) {
+      copyRecursive(join(src, file), join(dest, file));
+    }
+  }
+
+  try {
+    copyRecursive(safeTemplatesDir, webDir);
+  } catch (e) {
+    console.warn("[zkkit] WARNING: Could not copy dashboard template: " + (e as Error).message);
+  }
+}
+
 function writeFile(path: string, contents: string): string {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, contents, "utf8");
@@ -53,6 +95,7 @@ export function runBuild(opts: BuildOptions): BuildResult {
 
   let crossChecked = false;
   let abiJsonPath = opts.abiJsonPath;
+  let privateInputs: PublicInput[] = [];
 
   if (!opts.skipCompile) {
     if (nargo) {
@@ -80,6 +123,7 @@ export function runBuild(opts: BuildOptions): BuildResult {
   if (abiJsonPath) {
     const abiJson = JSON.parse(readFileSync(abiJsonPath, "utf8"));
     const abiPublicInputs = extractPublicInputs(abiJson);
+    privateInputs = extractPrivateInputs(abiJson);
     crossCheck(cfg, abiPublicInputs);
     crossChecked = true;
   } else if (opts.skipCompile || !nargo) {
@@ -93,11 +137,27 @@ export function runBuild(opts: BuildOptions): BuildResult {
     writeFile(join(outDir, "verifier", "src", "lib.rs"), genVerifier(cfg))
   );
   wroteFiles.push(
-    writeFile(join(outDir, "client", `${cfg.circuit.name}.ts`), genClient(cfg))
+    writeFile(join(outDir, "verifier", "src", "test.rs"), genTest(cfg))
   );
   wroteFiles.push(
-    writeFile(join(outDir, "react", `use${pascal}Proof.tsx`), genHook(cfg))
+    writeFile(join(outDir, "verifier", "Cargo.toml"), genCargo(cfg))
   );
+  wroteFiles.push(
+    writeFile(join(outDir, "web", "src", "client.ts"), genClient(cfg))
+  );
+  wroteFiles.push(
+    writeFile(join(outDir, "web", "src", `use${pascal}Proof.tsx`), genHook(cfg))
+  );
+  if (abiJsonPath) {
+    wroteFiles.push(
+      writeFile(
+        join(outDir, "web", "src", "circuit.json"),
+        readFileSync(abiJsonPath, "utf8")
+      )
+    );
+  }
+
+  copyDashboardTemplate(cfg, privateInputs, outDir, wroteFiles);
 
   return { wroteFiles, crossChecked, toolchain: { nargo, bb } };
 }

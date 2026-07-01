@@ -42,3 +42,26 @@ describe("genHook", () => {
     expect(genHook(cfg)).toContain("useBallotProof");
   });
 });
+
+import { genTest } from "../src/codegen";
+describe("genTest", () => {
+  const rs = genTest(cfg);
+  test("asserts each mutation block passes mutated_<name> and valid_<other> in verify()", () => {
+    // There are 3 inputs: root, nullifier, vote
+    // When mutating root:
+    expect(rs).toContain("&mutated_root,");
+    expect(rs).toContain("&valid_nullifier,");
+    expect(rs).toContain("&valid_vote");
+    
+    // When mutating nullifier:
+    expect(rs).toContain("&valid_root,");
+    expect(rs).toContain("&mutated_nullifier,");
+    
+    // When mutating vote:
+    expect(rs).toContain("&mutated_vote");
+
+    // Ensure mock base verifier setup is correctly generated
+    expect(rs).toContain("mock_client.set_expected(&expected_blob)");
+    expect(rs).toContain("assert_eq!(base_result, true");
+  });
+});

@@ -4,9 +4,17 @@ import { fileURLToPath } from "node:url";
 import Handlebars from "handlebars";
 import type { PublicInputType, ZkKitConfig } from "./config.js";
 
+import { existsSync } from "node:fs";
+
 // Resolve the project-root `templates/` dir relative to this module (ESM-safe).
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = join(__dirname, "..", "templates");
+let TEMPLATES_DIR = join(__dirname, "..", "templates");
+// Quick fix for Windows path formatting
+TEMPLATES_DIR = TEMPLATES_DIR.replace(/^\\([A-Z]:\\)/, '$1');
+if (!existsSync(TEMPLATES_DIR)) {
+  TEMPLATES_DIR = join(__dirname, "..", "..", "templates");
+  TEMPLATES_DIR = TEMPLATES_DIR.replace(/^\\([A-Z]:\\)/, '$1');
+}
 
 const SOROBAN_TYPES: Record<PublicInputType, string> = {
   field: "BytesN<32>",
@@ -48,6 +56,7 @@ function registerHelpers(): void {
     "tsType",
     (type: PublicInputType) => new Handlebars.SafeString(TS_TYPES[type])
   );
+  Handlebars.registerHelper("eq", (a: any, b: any) => a === b);
   helpersRegistered = true;
 }
 
@@ -80,4 +89,14 @@ export function genClient(cfg: ZkKitConfig): string {
 /** Generate the React hook for browser-side proving. */
 export function genHook(cfg: ZkKitConfig): string {
   return render("hook.tsx.hbs", cfg);
+}
+
+/** Generate the Rust mutation tests. */
+export function genTest(cfg: ZkKitConfig): string {
+  return render("test.rs.hbs", cfg);
+}
+
+/** Generate the verifier Cargo.toml. */
+export function genCargo(cfg: ZkKitConfig): string {
+  return render("Cargo.toml.hbs", cfg);
 }

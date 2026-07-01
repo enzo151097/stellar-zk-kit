@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { extractPublicInputs, crossCheck } from "../src/abi";
+import { extractPrivateInputs, extractPublicInputs, crossCheck } from "../src/abi";
 import type { ZkKitConfig } from "../src/config";
 
 const abiFixture = {
@@ -48,6 +48,14 @@ describe("extractPublicInputs", () => {
       },
     };
     expect(() => extractPublicInputs(abi)).toThrow(/weird/);
+  });
+});
+
+describe("extractPrivateInputs", () => {
+  test("returns only private params in declared order with mapped types", () => {
+    expect(extractPrivateInputs(abiFixture)).toEqual([
+      { name: "identity_secret", type: "field" },
+    ]);
   });
 });
 

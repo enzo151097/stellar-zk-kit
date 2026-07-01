@@ -1,0 +1,71 @@
+#![cfg(test)]
+use super::*;
+use soroban_sdk::{Env, Bytes, BytesN, contract, contractimpl, Symbol};
+
+// Mock base verifier for testing without Wasm deployment
+#[contract]
+pub struct MockBaseVerifier;
+
+#[contractimpl]
+impl MockBaseVerifier {
+    pub fn set_vk(env: Env, _vk_json: Bytes) -> BytesN<32> {
+        BytesN::from_array(&env, &[0; 32])
+    }
+    pub fn verify_proof_with_stored_vk(env: Env, proof_blob: Bytes) -> Option<BytesN<32>> {
+        let expected: Bytes = env.storage().instance().get(&Symbol::new(&env, "expected")).unwrap();
+        if proof_blob == expected {
+            Some(BytesN::from_array(&env, &[0; 32]))
+        } else {
+            None
+        }
+    }
+    // Setup helper
+    pub fn set_expected(env: Env, expected: Bytes) {
+        env.storage().instance().set(&Symbol::new(&env, "expected"), &expected);
+    }
+}
+
+#[test]
+fn test_public_input_mutations() {
+    let env = Env::default();
+    
+    let mock_base_id = env.register_contract(None, MockBaseVerifier);
+    let contract_id = env.register_contract(None, {{pascal circuit.name}}Verifier);
+    
+    let mock_client = MockBaseVerifierClient::new(&env, &mock_base_id);
+    let client = {{pascal circuit.name}}VerifierClient::new(&env, &contract_id);
+    
+    client.init(&Bytes::new(&env), &mock_base_id);
+
+    let proof = Bytes::new(&env);
+    
+    {{#each publicInputs as |outer|}}
+    let valid_{{outer.name}} = {{#if (eq outer.type "u32")}}0u32{{else if (eq outer.type "u64")}}0u64{{else if (eq outer.type "bool")}}false{{else}}BytesN::from_array(&env, &[0u8; 32]){{/if}};
+    {{/each}}
+
+    let valid_pubs = {{pascal circuit.name}}Verifier::pack_public_inputs(&env{{#each publicInputs as |outer|}}, &valid_{{outer.name}}{{/each}});
+    let expected_blob = {{pascal circuit.name}}Verifier::pack_blob(&env, &valid_pubs, &proof);
+    
+    mock_client.set_expected(&expected_blob);
+
+    let base_result = client.verify(
+        &proof,
+        {{#each publicInputs as |outer|}}
+        &valid_{{outer.name}}{{#unless @last}},{{/unless}}
+        {{/each}}
+    );
+    assert_eq!(base_result, true, "Baseline should pass");
+
+    {{#each publicInputs as |outer|}}
+    {
+        let mutated_{{outer.name}} = {{#if (eq outer.type "u32")}}1u32{{else if (eq outer.type "u64")}}1u64{{else if (eq outer.type "bool")}}true{{else}}BytesN::from_array(&env, &[1u8; 32]){{/if}};
+        let result = client.verify(
+            &proof,
+            {{#each @root.publicInputs as |inner|}}
+            {{#if (eq outer.name inner.name)}}&mutated_{{outer.name}}{{else}}&valid_{{inner.name}}{{/if}}{{#unless @last}},{{/unless}}
+            {{/each}}
+        );
+        assert_eq!(result, false, "Proof should fail when {{outer.name}} is mutated");
+    }
+    {{/each}}
+}

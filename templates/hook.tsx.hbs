@@ -53,7 +53,7 @@ export function use{{pascal circuit.name}}Proof(
       setError(null);
       try {
         const ordered = {{pascal circuit.name}}InputOrder.map((key) =>
-          toFieldBigInt((inputs as Record<string, unknown>)[key as string])
+          toFieldBigInt((inputs as any)[key as string])
         );
         const rawProof = await prover(ordered);
         const bundle = encodeForSoroban(rawProof, ordered);

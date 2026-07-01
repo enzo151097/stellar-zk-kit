@@ -54,11 +54,10 @@ function mapNoirType(name: string, t: NoirType): PublicInputType {
   }
 }
 
-/**
- * Extract ONLY the public parameters from a Noir-compiled ABI JSON, preserving
- * the declared order and mapping Noir types to our PublicInputType.
- */
-export function extractPublicInputs(abiJson: unknown): PublicInput[] {
+function extractInputsByVisibility(
+  abiJson: unknown,
+  visibility: "public" | "private"
+): PublicInput[] {
   const root = abiJson as { abi?: { parameters?: unknown } } | undefined;
   const parameters = root?.abi?.parameters;
   if (!Array.isArray(parameters)) {
@@ -73,10 +72,23 @@ export function extractPublicInputs(abiJson: unknown): PublicInput[] {
     if (!raw || typeof raw.name !== "string" || !raw.type) {
       throw new Error("Invalid Noir ABI parameter entry encountered.");
     }
-    if (raw.visibility !== "public") continue;
+    if (raw.visibility !== visibility) continue;
     result.push({ name: raw.name, type: mapNoirType(raw.name, raw.type) });
   }
   return result;
+}
+
+/**
+ * Extract ONLY the public parameters from a Noir-compiled ABI JSON, preserving
+ * the declared order and mapping Noir types to our PublicInputType.
+ */
+export function extractPublicInputs(abiJson: unknown): PublicInput[] {
+  return extractInputsByVisibility(abiJson, "public");
+}
+
+/** Extract private witness parameters for the generated browser prover form. */
+export function extractPrivateInputs(abiJson: unknown): PublicInput[] {
+  return extractInputsByVisibility(abiJson, "private");
 }
 
 /**
